@@ -1,5 +1,20 @@
 import streamlit as st
 from utils.coach_engine import ask_coach, generate_plan
+def health_score(sleep, activity):
+    score = 50
+
+    if sleep >= 7:
+        score += 20
+    elif sleep >= 6:
+        score += 10
+
+    if activity == "High":
+        score += 20
+    elif activity == "Moderate":
+        score += 10
+
+    return min(score, 100)
+
 
 st.set_page_config(page_title="GenZ AI Health Coach")
 
