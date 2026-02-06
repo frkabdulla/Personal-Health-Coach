@@ -1,5 +1,15 @@
 import streamlit as st
 from utils.coach_engine import ask_coach, generate_plan
+
+# ---------- Page Setup ----------
+
+st.set_page_config(page_title="GenZ AI Health Coach", page_icon="🧠")
+
+st.title("🧠 GenAI Personal Health Coach (Gen Z Edition)")
+st.caption("AI-powered personalized wellness coach for Gen Z 🚀")
+
+# ---------- Health Score Logic ----------
+
 def health_score(sleep, activity):
     score = 50
 
@@ -15,14 +25,9 @@ def health_score(sleep, activity):
 
     return min(score, 100)
 
+# ---------- Sidebar Profile ----------
 
-st.set_page_config(page_title="GenZ AI Health Coach")
-
-st.title("🧠 GenAI Personal Health Coach (Gen Z Edition)")
-
-# -------- Sidebar --------
-
-st.sidebar.header("Your Profile")
+st.sidebar.header("👤 Your Profile")
 
 age = st.sidebar.number_input("Age", 15, 60, 22)
 
@@ -45,7 +50,7 @@ profile = {
     "activity": activity
 }
 
-# -------- Tabs --------
+# ---------- Tabs ----------
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "💬 AI Coach Chat",
@@ -54,47 +59,65 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "📊 Health Score"
 ])
 
-
-# -------- Chat --------
+# ---------- CHAT TAB ----------
 
 with tab1:
-    st.subheader("Ask AI Coach")
+    st.subheader("Ask Your AI Coach")
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_q = st.text_input("Ask about diet, workout, habits")
+    user_q = st.text_input("Ask about diet, workout, habits", key="chat_input")
 
-    if st.button("Ask Coach"):
-        if user_q:
-            with st.spinner("Thinking..."):
+    if st.button("Ask Coach", key="ask_btn"):
+        if user_q.strip():
+            with st.spinner("Coach thinking..."):
                 ans = ask_coach(profile, user_q)
 
             st.session_state.chat_history.append(("You", user_q))
             st.session_state.chat_history.append(("Coach", ans))
 
+    # Display chat history
     for role, msg in st.session_state.chat_history:
         if role == "You":
             st.markdown(f"**🧑 You:** {msg}")
         else:
             st.markdown(f"**🧠 Coach:** {msg}")
 
-
-# -------- Plan --------
+# ---------- PLAN TAB ----------
 
 with tab2:
-    st.subheader("Daily Plan")
+    st.subheader("Generate Your Daily Plan")
 
-    if st.button("Generate Plan"):
-        with st.spinner("Building plan..."):
+    if st.button("Generate Plan", key="plan_btn"):
+        with st.spinner("Creating your personalized plan..."):
             plan = generate_plan(goal)
         st.write(plan)
 
-# -------- Motivation --------
+# ---------- MOTIVATION TAB ----------
 
 with tab3:
-    st.subheader("Motivation")
+    st.subheader("Get Instant Motivation")
 
-    if st.button("Motivate Me"):
-        msg = ask_coach(profile, "Give me a short health motivation")
+    if st.button("Motivate Me", key="mot_btn"):
+        with st.spinner("Charging motivation..."):
+            msg = ask_coach(profile, "Give me a short health motivation")
         st.success(msg)
+
+# ---------- HEALTH SCORE TAB ----------
+
+with tab4:
+    st.subheader("Your Lifestyle Health Score")
+
+    score = health_score(sleep, activity)
+
+    st.metric("Health Score", f"{score}/100")
+
+    if score >= 85:
+        st.success("Excellent habits — keep going 🔥")
+    elif score >= 65:
+        st.info("Good — small upgrades will help 👍")
+    else:
+        st.warning("Needs improvement — coach can guide you 💪")
+
+    st.progress(score / 100)
