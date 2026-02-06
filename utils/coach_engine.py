@@ -1,60 +1,74 @@
 import os
 import streamlit as st
-from openai import OpenAI
+import requests
 from dotenv import load_dotenv
 
-# ---------- Load Env (for local run) ----------
 load_dotenv()
 
-# ---------- Get API Key (Cloud + Local Safe) ----------
-api_key = os.getenv("OPENAI_API_KEY")
+# ---------- Read API key securely ----------
+api_key = os.getenv("SCALEDOWN_API_KEY")
 
 if not api_key:
-    try:
-        api_key = st.secrets["OPENAI_API_KEY"]
-    except Exception:
-        api_key = None
+    api_key = st.secrets.get("SCALEDOWN_API_KEY")
 
 if not api_key:
-    raise ValueError("OPENAI_API_KEY not found in environment or Streamlit secrets")
+    raise ValueError("Missing SCALEDOWN_API_KEY in Streamlit Secrets")
 
-# ---------- OpenAI Client ----------
-client = OpenAI(aGIT6MXCUe2QZcxOLHbWx1OjSg1UzZ5VMHDKNY1g)
+# ---------- Config ----------
+BASE_URL = "https://api.scaledown.ai/v1/chat/completions"
+MODEL = "gpt-4o-mini"
 
-# ---------- System Prompt ----------
+HEADERS = {
+    "Authorization": f"Bearer {api_key}",
+    "Content-Type": "application/json"
+}
+
 SYSTEM_PROMPT = """
 You are a Gen Z style personal health coach.
-Give safe lifestyle advice only.
+Give only safe lifestyle advice.
 No medical diagnosis.
-Keep answers short, practical, and motivating.
+Short, motivating, practical answers.
 """
 
-# ---------- Ask Coach ----------
+# ---------- Core API Call ----------
+def call_ai(prompt):
+
+    payload = {
+        "model": MODEL,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7
+    }
+
+    r = requests.post(BASE_URL, headers=HEADERS, json=payload, timeout=60)
+
+    if r.status_code != 200:
+        return f"API Error {r.status_code}: {r.text}"
+
+    data = r.json()
+    return data["choices"][0]["message"]["content"]
+
+
+# ---------- Public Functions ----------
 def ask_coach(profile, question):
 
     prompt = f"""
-{SYSTEM_PROMPT}
-
 User Profile:
 Age: {profile['age']}
 Goal: {profile['goal']}
 Sleep: {profile['sleep']}
 Activity: {profile['activity']}
-Mood: {profile.get('mood', 'unknown')}
+Mood: {profile.get('mood','unknown')}
 
-User Question:
+Question:
 {question}
 """
 
-    resp = client.responses.create(
-        model="gpt-4o-mini",
-        input=prompt
-    )
-
-    return resp.output_text
+    return call_ai(prompt)
 
 
-# ---------- Plan Generator ----------
 def generate_plan(goal):
     return ask_coach(
         {
