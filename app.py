@@ -43,13 +43,25 @@ tab1, tab2, tab3 = st.tabs([
 with tab1:
     st.subheader("Ask AI Coach")
 
-    q = st.text_input("Ask about diet, workout, habits")
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    user_q = st.text_input("Ask about diet, workout, habits")
 
     if st.button("Ask Coach"):
-        if q:
+        if user_q:
             with st.spinner("Thinking..."):
-                ans = ask_coach(profile, q)
-            st.write(ans)
+                ans = ask_coach(profile, user_q)
+
+            st.session_state.chat_history.append(("You", user_q))
+            st.session_state.chat_history.append(("Coach", ans))
+
+    for role, msg in st.session_state.chat_history:
+        if role == "You":
+            st.markdown(f"**🧑 You:** {msg}")
+        else:
+            st.markdown(f"**🧠 Coach:** {msg}")
+
 
 # -------- Plan --------
 
