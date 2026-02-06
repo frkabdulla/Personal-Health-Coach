@@ -1,42 +1,67 @@
 import os
+import streamlit as st
 from openai import OpenAI
 from dotenv import load_dotenv
 
+# ---------- Load Env (for local run) ----------
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# ---------- Get API Key (Cloud + Local Safe) ----------
+api_key = os.getenv("OPENAI_API_KEY")
 
+if not api_key:
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+    except Exception:
+        api_key = None
+
+if not api_key:
+    raise ValueError("OPENAI_API_KEY not found in environment or Streamlit secrets")
+
+# ---------- OpenAI Client ----------
+client = OpenAI(aGIT6MXCUe2QZcxOLHbWx1OjSg1UzZ5VMHDKNY1g)
+
+# ---------- System Prompt ----------
 SYSTEM_PROMPT = """
 You are a Gen Z style personal health coach.
 Give safe lifestyle advice only.
-Keep answers short and motivating.
+No medical diagnosis.
+Keep answers short, practical, and motivating.
 """
 
+# ---------- Ask Coach ----------
 def ask_coach(profile, question):
 
     prompt = f"""
+{SYSTEM_PROMPT}
+
+User Profile:
 Age: {profile['age']}
 Goal: {profile['goal']}
 Sleep: {profile['sleep']}
 Activity: {profile['activity']}
+Mood: {profile.get('mood', 'unknown')}
 
-Question: {question}
+User Question:
+{question}
 """
 
-    resp = client.chat.completions.create(
+    resp = client.responses.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
+        input=prompt
     )
 
-    return resp.choices[0].message.content
+    return resp.output_text
 
 
+# ---------- Plan Generator ----------
 def generate_plan(goal):
     return ask_coach(
-        {"age": "young", "goal": goal, "sleep": "7", "activity": "moderate"},
-        f"Create a one-day health plan for {goal}"
+        {
+            "age": "young",
+            "goal": goal,
+            "sleep": "7",
+            "activity": "moderate"
+        },
+        f"Create a one-day diet and workout plan for {goal}"
     )
